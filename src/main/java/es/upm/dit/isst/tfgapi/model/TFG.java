@@ -24,7 +24,7 @@ public class TFG {
     private String tutor;
     private String titulo;
     private String resumen;
-    private String estado;
+    private Estado estado;
     @JsonIgnore
     @Lob
     private byte[] memoria;
@@ -36,7 +36,7 @@ public class TFG {
     private Sesion sesion;
 
     // Constructor:
-    public TFG(@Email String alumno, @Email String tutor, String titulo, String resumen, String estado, byte[] memoria,
+    public TFG(@Email String alumno, @Email String tutor, String titulo, String resumen, Estado estado, byte[] memoria,
             @PositiveOrZero @DecimalMax("10.0") Double calificacion, Boolean matriculaHonor, Sesion sesion) {
         this.alumno = alumno;
         this.tutor = tutor;
@@ -97,11 +97,11 @@ public class TFG {
         this.resumen = resumen;
     }
 
-    public String getEstado() {
+    public Estado getEstado() {
         return estado;
     }
 
-    public void setEstado(String estado) {
+    public void setEstado(Estado estado) {
         this.estado = estado;
     }
 
