@@ -20,8 +20,8 @@ import jakarta.transaction.Transactional;
 @RequestMapping("/myApi")
 public class TFGController {
 
-    private final TFGRepository tfgRepository;
-    private final SesionRepository sesionRepository;
+    private final TFGRepository tfgRepository; // Repositorio para acceder a los TFGs.
+    private final SesionRepository sesionRepository; // Repositorio para acceder a las sesiones de defensa.
 
     public static final Logger log = LoggerFactory.getLogger(TFGController.class);
 
@@ -39,8 +39,10 @@ public class TFGController {
      */
 
     // @CrossOrigin(origins = "http://localhost:8080")
+
     @GetMapping("/tfgs")
     List<TFG> readAll(@RequestParam(name = "tutor", required = false) String tutor) {
+
         // No me habría hecho falta especificar el nombre del parámetro,
         // porque coincide con el del método
         if (tutor != null && !tutor.isEmpty()) {
@@ -52,9 +54,9 @@ public class TFGController {
     }
 
     @PostMapping("/tfgs")
-    ResponseEntity<TFG> create(@RequestBody TFG newTFG)
-            throws URISyntaxException {
+    ResponseEntity<TFG> create(@RequestBody TFG newTFG) throws URISyntaxException {
         // Devolver código de error si el TFG ya existe
+        // En este caso, el ID del TFG es el email del alumno (ver modelo de TFG).
         if (tfgRepository.findById(newTFG.getAlumno()).isPresent()) {
             return new ResponseEntity<TFG>(HttpStatus.CONFLICT);
         }
@@ -72,6 +74,7 @@ public class TFGController {
         // del alumno nada más)
 
         if (!newTFG.getAlumno().endsWith("@alumnos.upm.es")) {
+            log.error("El email del alumno no es correcto: " + newTFG.getAlumno());
             return ResponseEntity.badRequest().body(null);
         }
 
@@ -80,30 +83,30 @@ public class TFGController {
         // que antes)
 
         if (!newTFG.getTutor().endsWith("@upm.es")) {
+            log.error("El email del tutor no es correcto: " + newTFG.getTutor());
             return ResponseEntity.badRequest().body(null);
         }
 
+        // Guardar el nuevo TFG en la base de datos.
         TFG result = tfgRepository.save(newTFG);
         log.info("Nuevo TFG creado para alumno: " + result.getAlumno());
 
+        // TODO enviar notificación por e-mail al tutor
         // Enviar notificación por e-mail al tutor
         // En este caso no se envía el email (simplemente lo simulamos),
         // pero se podría hacer con un servicio de correo
 
-        log.info("Se ha enviado una notificación al tutor {} sobre la creación del TFG del alumno {}.",
-                newTFG.getTutor(), newTFG.getAlumno());
         return ResponseEntity.created(new URI("/tfgs/" + result.getAlumno())).body(result);
     }
 
-    @GetMapping("/tfgs/{id}")
+    @GetMapping("/tfgs/{id}")   
     ResponseEntity<TFG> readOne(@PathVariable String id) {
         return tfgRepository.findById(id).map(tfg -> ResponseEntity.ok().body(tfg))
                 .orElse(new ResponseEntity<TFG>(HttpStatus.NOT_FOUND));
     }
 
-
     @PutMapping("/tfgs/{id}")
-    ResponseEntity<TFG> update(@RequestBody TFG newTFG, @PathVariable String id) {  
+    ResponseEntity<TFG> update(@RequestBody TFG newTFG, @PathVariable String id) {
         return tfgRepository.findById(id).map(tfg -> {
             tfg.setAlumno(newTFG.getAlumno()); // En realidad nunca debería modificarse, producirá error 500
             tfg.setTutor(newTFG.getTutor());
@@ -162,7 +165,7 @@ public class TFGController {
     }
 
     @PutMapping("/tfgs/{id}/estado/{estado}")
-    @Transactional  // Para evitar problemas de concurrencia al actualizar el estado.
+    @Transactional // Para evitar problemas de concurrencia al actualizar el estado.
     public ResponseEntity<?> actualizaEstado(@PathVariable String id, @PathVariable Estado estado) {
         // Spring ya devuelve un error 400 Bad Request si el estado no es válido
         return tfgRepository.findById(id).map(tfg -> {
